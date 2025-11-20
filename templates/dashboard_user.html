@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h2 class="text-3xl font-bold text-gray-800">وظایف محول شده به من</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">خلاصه وظیفه ها</h2>
+        <p class="text-lg text-gray-600">
+            شما {{ total_tasks }} وظیفه دارید.
+        </p>
+        <p class="text-lg text-gray-600 mt-2">
+            از این تعداد، {{ completed_tasks_count }} وظیفه انجام شده است.
+        </p>
+    </div>
+</div>
+<!-- Filter Form -->
+<form method="get" action="/dashboard" class="bg-white p-4 rounded-lg shadow-md mb-6 flex items-center gap-4">
+    <span class="font-bold">فیلتر:</span>
+    <select name="status_filter" class="p-2 border rounded-md bg-white" onchange="this.form.submit()"><option value="">همه وضعیت ها</option><option value="To Do" {% if filters.status == 'To Do' %}selected{% endif %}>انجام نشده</option><option value="In Progress" {% if filters.status == 'In Progress' %}selected{% endif %}>در حال انجام</option><option value="Completed" {% if filters.status == 'Completed' %}selected{% endif %}>تکمیل شده</option><option value="Failed" {% if filters.status == 'Failed' %}selected{% endif %}>تاخیر</option></select>
+    <select name="level_filter" class="p-2 border rounded-md bg-white" onchange="this.form.submit()"><option value="">همه سطوح</option>{% for level in TASK_LEVELS %}<option value="{{ level }}" {% if filters.level == level %}selected{% endif %}>{{ level }}</option>{% endfor %}</select>
+    <select name="type_filter" class="p-2 border rounded-md bg-white" onchange="this.form.submit()"><option value="">همه انواع</option>{% for type in TASK_TYPES %}<option value="{{ type }}" {% if filters.type == type %}selected{% endif %}>{{ type }}</option>{% endfor %}</select>
+    <a href="/dashboard" class="text-sm text-blue-600 hover:underline">حذف فیلترها</a>
+</form>
+
+<div class="space-y-4">
+    {% for task in tasks %}
+    {% set status_color = 'border-gray-400' %}
+    {% if task.is_failed %}{% set status_color = 'border-red-500' %}
+    {% elif task.status == 'Completed' %}{% set status_color = 'border-green-500' %}
+    {% elif task.status == 'In Progress' %}{% set status_color = 'border-blue-500' %}{% endif %}
+    <div class="bg-white p-5 rounded-lg shadow-md border-r-4 {{ status_color }}">
+        <div class="flex justify-between items-start">
+            <div>
+                <h3 class="font-bold text-lg text-gray-900">{{ task.title }}</h3>
+                <p class="text-sm text-gray-600">از: <strong class="font-medium">{{ task.admin.username }}</strong> | موعد: <strong class="font-medium">{{ task.end_date.strftime('%Y-%m-%d') if task.end_date else 'N/A' }}</strong></p>
+            </div>
+             <div class="text-left flex flex-col items-end gap-2">
+                {% set status_text, status_bg = ('تاخیر', 'bg-red-100 text-red-800') if task.is_failed else (task.status, 'bg-gray-100 text-gray-800') %}
+                {% if task.status == 'Completed' %}{% set status_text, status_bg = ('تکمیل شده', 'bg-green-100 text-green-800') %}{% endif %}
+                {% if task.status == 'In Progress' %}{% set status_text, status_bg = ('در حال انجام', 'bg-blue-100 text-blue-800') %}{% endif %}
+                <span class="px-3 py-1 text-xs font-semibold rounded-full {{ status_bg }}">{{ status_text }}</span>
+                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">{{ task.level }}</span>
+            </div>
+        </div>
+        <div class="mt-4 flex justify-between items-center">
+            <progress class="w-2/3" value="{{ task.success_percent }}" max="100"></progress>
+            <span class="font-bold text-gray-700">{{ "%.0f"|format(task.success_percent|float) }}%</span>
+            <a href="/task/{{ task.id }}" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-4 rounded-md transition">بروزرسانی پیشرفت</a>
+        </div>
+    </div>
+    {% else %}
+    <div class="bg-white p-6 rounded-lg shadow-md text-center">
+        <p class="text-gray-600">شما هیچ وظیفه فعالی ندارید!</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

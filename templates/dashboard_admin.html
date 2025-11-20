@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% if user.role == "boss" %}
+<nav class="mb-6 flex space-x-4 rtl:space-x-reverse">
+    <a href="/customers" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold">مشتریان</a>
+</nav>
+{% endif %}
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">خلاصه وظیفه ها</h2>
+        <p class="text-lg text-gray-600">
+            شما {{ total_tasks }} وظیفه دارید.
+        </p>
+        <p class="text-lg text-gray-600 mt-2">
+            از این تعداد، {{ completed_tasks_count }} وظیفه انجام شده است.
+        </p>
+    </div>
+</div>
+
+{% if notifications %}
+<div id="notifications" class="mb-6">
+    <h2 class="text-xl font-bold text-yellow-800 mb-3">🔔 اطلاع‌رسانی‌های پیگیری</h2>
+    <div class="space-y-2">
+    {% for notif in notifications %}
+        <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 flex justify-between items-center rounded-r-lg">
+            <div>
+                <p class="font-bold">وظیفه: <a href="/task/{{ notif.task_id }}" class="underline">{{ notif.task.title }}</a></p>
+                <p>{{ notif.message }}</p>
+            </div>
+            <form action="/notifications/mark-read/{{ notif.id }}" method="post">
+                <button type="submit" class="text-xs bg-white text-gray-700 px-2 py-1 rounded border">خوانده شد</button>
+            </form>
+        </div>
+    {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+    <div class="lg:col-span-1 space-y-6">
+        <form id="create-task-form" method="post" action="/task/create" class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-xl font-bold mb-4 text-gray-800">ایجاد وظیفه جدید</h3>
+            <div class="space-y-4">
+                <input name="title" placeholder="عنوان وظیفه" class="w-full p-2 border rounded-md" required />
+                <textarea name="description" placeholder="توضیحات وظیفه" rows="3" class="w-full p-2 border rounded-md" required></textarea>
+                <div>
+                    <label class="text-sm">پروژه مرتبط:</label>
+                    <select name="project_id" id="project-selector-create" class="w-full">
+                        <option value="">هیچکدام</option>
+                        {% for p in projects %}
+                        <option value="{{ p.id }}">{{ p.internal_number }} - {{ p.description | truncate(50) }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <select name="task_type" class="w-full p-2 border rounded-md bg-white"><option value="" disabled selected>نوع وظیفه</option>{% for type in TASK_TYPES %}<option value="{{ type }}">{{ type }}</option>{% endfor %}</select>
+                <select name="level" class="w-full p-2 border rounded-md bg-white"><option value="" disabled selected>سطح اهمیت</option>{% for level in TASK_LEVELS %}<option value="{{ level }}">{{ level }}</option>{% endfor %}</select>
+                <div><label class="text-sm">بخش:</label><select id="section-selector" class="w-full p-2 border rounded-md bg-white"><option value="all" selected>همه بخش ها</option>{% for section in SECTIONS %}<option value="{{ section }}">{{ section }}</option>{% endfor %}</select></div>
+                <div><label class="text-sm">مسئول انجام:</label><select id="user-selector" name="assigned_to" class="w-full p-2 border rounded-md bg-white" required><option>ابتدا بخش را انتخاب کنید</option></select></div>
+                <div><label class="text-sm">رهبر وظیفه (اختیاری):</label><select id="leader-selector" name="leader_id" class="w-full p-2 border rounded-md bg-white"><option value="">هیچکدام</option></select></div>
+                <div><label class="text-sm">تاریخ شروع:</label><input name="start_date" type="date" class="w-full p-2 border rounded-md" required></div>
+                <div><label class="text-sm">تاریخ پایان:</label><input name="end_date" type="date" class="w-full p-2 border rounded-md" required></div>
+                <div><label class="text-sm">تاریخ پیگیری (اختیاری):</label><input type="date" name="follow_up_date" class="w-full p-2 border rounded-md"></div>
+                <div><label class="text-sm">پیام پیگیری (اختیاری):</label><input type="text" name="follow_up_message" placeholder="متن یادآوری شما..." class="w-full p-2 border rounded-md"></div>
+                <button class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition">ایجاد وظیفه</button>
+            </div>
+        </form>
+        <form id="filter-form" method="get" action="/dashboard" class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-xl font-bold mb-4 text-gray-800">فیلتر وظایف</h3>
+            <div class="space-y-4">
+                <input type="text" name="search_filter" placeholder="جستجوی عنوان وظیفه..." value="{{ filters.search or '' }}" class="w-full p-2 border rounded-md">
+                <select name="status_filter" class="w-full p-2 border rounded-md bg-white" onchange="this.form.submit()"><option value="">همه وضعیت ها</option><option value="To Do" {% if filters.status == 'To Do' %}selected{% endif %}>انجام نشده</option><option value="In Progress" {% if filters.status == 'In Progress' %}selected{% endif %}>در حال انجام</option><option value="Completed" {% if filters.status == 'Completed' %}selected{% endif %}>تکمیل شده</option><option value="Failed" {% if filters.status == 'Failed' %}selected{% endif %}>ناموفق</option></select>
+                <select name="level_filter" class="w-full p-2 border rounded-md bg-white" onchange="this.form.submit()"><option value="">همه سطوح</option>{% for level in TASK_LEVELS %}<option value="{{ level }}" {% if filters.level == level %}selected{% endif %}>{{ level }}</option>{% endfor %}</select>
+                <select name="type_filter" class="w-full p-2 border rounded-md bg-white" onchange="this.form.submit()"><option value="">همه انواع</option>{% for type in TASK_TYPES %}<option value="{{ type }}" {% if filters.type == type %}selected{% endif %}>{{ type }}</option>{% endfor %}</select>
+                <select name="section_filter" class="w-full p-2 border rounded-md bg-white" onchange="this.form.submit()"><option value="">همه بخش ها</option>{% for section in SECTIONS %}<option value="{{ section }}" {% if filters.section == section %}selected{% endif %}>{{ section }}</option>{% endfor %}</select>
+                <input type="text" name="man_filter" placeholder=" سپرده شده به ..." value="{{ filters.man or '' }}" class="w-full p-2 border rounded-md">
+                <select name="man_filter" id="filter-selector-create" class="w-full" onchange="this.form.submit()">
+                    <option value="">{{ filters.man or 'سپرده شده به...' }}</option>
+                    {% for p in users %}
+                    <option value="{{ p.username }}">{{ p.username }}</option>
+                    {% endfor %}
+                </select>
+                <input type="text" name="leader_filter" placeholder="رهبر" value="{{ filters.leader or '' }}" class="w-full p-2 border rounded-md">
+                <select name="leader_filter" id="leader-selector-create" class="w-full" onchange="this.form.submit()">
+                    <option value="">{{ filters.leader or 'رهبر...' }}</option>
+                    {% for p in users %}
+                    <option value="{{ p.username }}">{{ p.username }}</option>
+                    {% endfor %}
+                </select>
+                <select name="project_filter" id="proj-selector-create" class="w-full" onchange="this.form.submit()">
+                    <option value="">{{ filters.proj or 'پروژه...' }}</option>
+                    {% for p in projects %}
+                    <option value="{{ p.description }}">{{ p.description }} - {{ p.internal_number | truncate(50) }}</option>
+                    {% endfor %}
+                </select>
+                <a href="/dashboard" class="block text-center text-sm text-blue-600 hover:underline mt-2">حذف فیلترها</a>
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md">جستجو</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="lg:col-span-3">
+        <h2 class="text-2xl font-bold mb-4 text-gray-800">📝 وظایف محول شده به من</h2>
+        <div class="space-y-4">
+            {% for task in my_tasks %}
+                <div class="bg-white p-5 rounded-lg shadow-md border-r-4 {% if task.is_failed %}border-red-500{% elif task.status == 'Completed' %}border-green-500{% elif task.status == 'In Progress' %}border-blue-500{% else %}border-gray-400{% endif %}">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="font-bold text-lg text-gray-900">{{ task.title }}</h3>
+                            <p class="text-sm text-gray-600">از: <strong class="font-medium">{{ task.admin.username }}</strong> | موعد: <strong class="font-medium">{{ task.end_date.strftime('%Y-%m-%d') if task.end_date else 'N/A' }}</strong></p>
+                        </div>
+                         <div class="text-left flex flex-col items-end gap-2">
+                            {% set status_text, status_bg = ('انجام نشده', 'bg-gray-100 text-gray-800') %}{% if task.is_failed %}{% set status_text, status_bg = ('ناموفق', 'bg-red-100 text-red-800') %}{% elif task.status == 'Completed' %}{% set status_text, status_bg = ('تکمیل شده', 'bg-green-100 text-green-800') %}{% elif task.status == 'In Progress' %}{% set status_text, status_bg = ('در حال انجام', 'bg-blue-100 text-blue-800') %}{% endif %}
+                            <span class="px-3 py-1 text-xs font-semibold rounded-full {{ status_bg }}">{{ status_text }}</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex justify-between items-center">
+                        <progress class="w-2/3" value="{{ task.success_percent }}" max="100"></progress>
+                        <span class="font-bold text-gray-700">{{ "%.0f"|format(task.success_percent|float) }}%</span>
+                        <a href="/task/{{ task.id }}" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-4 rounded-md transition">بروزرسانی پیشرفت</a>
+                    </div>
+                </div>
+            {% else %}
+                <p class="text-gray-500 bg-white p-4 rounded-md shadow-sm">هیچ وظیفه‌ای به شما محول نشده است.</p>
+            {% endfor %}
+        </div>
+
+        <hr class="my-12 border-t-2 border-gray-200">
+
+        <h2 class="text-3xl font-bold mb-6 text-gray-800">کل وظایف سیستم</h2>
+        <div class="space-y-4">
+            {% for task in all_system_tasks %}
+            <div class="bg-white p-5 rounded-lg shadow-md">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h4 class="font-bold text-lg text-gray-900 flex items-center gap-2">
+                            {{ task.title }}
+                            {% if task.is_failed %}<span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-800 border border-red-300">ناموفق</span>{% endif %}
+                        </h4>
+                        {% if task.project %}<p class="text-xs text-indigo-600 font-semibold">پروژه: {{ task.project.internal_number }} - {{ task.project.description | truncate(30) }}</p>{% endif %}
+                        <p class="text-sm text-gray-600">به: <strong class="font-medium">{{ task.user.username }} ({{task.user.section}})</strong> | توسط: <strong class="font-medium">{{ task.admin.username }}</strong> | رهبر: <strong class="font-medium">{{ task.leader.username }}</strong></p>
+                        <p class="text-sm text-gray-600">شروع: <strong class="font-medium">{{ task.start_date }}</strong> | پایان: <strong class="font-medium">{{ task.end_date }}</strong></p>
+                    </div>
+                    <div class="text-left flex flex-col items-end gap-2">
+                        {% set status_text, status_bg = ('انجام نشده', 'bg-gray-100 text-gray-800') %}{% if task.status == 'Completed' %}{% set status_text, status_bg = ('تکمیل شده', 'bg-green-100 text-green-800') %}{% elif task.status == 'In Progress' %}{% set status_text, status_bg = ('در حال انجام', 'bg-blue-100 text-blue-800') %}{% endif %}
+                        <span class="px-3 py-1 text-xs font-semibold rounded-full {{ status_bg }}">{{ status_text }}</span>
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-end"><a href="/task/{{ task.id }}" class="bg-gray-700 hover:bg-gray-800 text-white text-sm font-bold py-2 px-4 rounded-md transition">مشاهده جزئیات</a></div>
+            </div>
+            {% else %}
+                <p class="text-gray-500">هیچ وظیفه ای در سیستم یافت نشد.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    $('#project-selector-create').select2();
+    $('#customer-selector-create').select2();
+    $('#filter-selector-create').select2();
+    $('#leader-selector-create').select2();
+    $('#proj-selector-create').select2();
+    
+    const sectionSelector = document.getElementById('section-selector');
+    const userSelector = document.getElementById('user-selector');
+    const leaderSelector = document.getElementById('leader-selector');
+
+    // This function now fetches users (including admins) based on the section.
+    // Admins will appear regardless of the selected section.
+    async function fetchUsersForDropdowns(section) {
+        const response = await fetch(`/api/users-by-section?section=${section}`);
+        const users = await response.json();
+        
+        // Populate Assignee dropdown
+        userSelector.innerHTML = '<option value="" disabled selected>انتخاب مسئول</option>';
+        users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.id;
+            option.textContent = user.username;
+            userSelector.appendChild(option);
+        });
+    }
+
+    // This function populates the Leader dropdown with ALL users (admins included)
+    async function fetchAllLeaders() {
+        const response = await fetch(`/api/users-by-section?section=all`);
+        const users = await response.json();
+
+        leaderSelector.innerHTML = '<option value="">هیچکدام</option>';
+        users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.id;
+            option.textContent = user.username;
+            leaderSelector.appendChild(option);
+        });
+    }
+
+    sectionSelector.addEventListener('change', function() {
+        fetchUsersForDropdowns(this.value);
+    });
+
+    // Initial loads
+    fetchUsersForDropdowns('all');
+    fetchAllLeaders();
+});
+</script>
+{% endblock %}

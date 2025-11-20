@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">
+        {{ "✏️ Edit Customer" if customer else "➕ Create New Customer" }}
+    </h2>
+
+    <form method="POST" action="{{
+        url_for('update_customer', customer_id=customer.id) if customer else url_for('create_new_customer')
+    }}">
+        
+        <h3 class="text-lg font-semibold text-gray-700 mb-2">Customer Details</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded mb-6">
+            <input name="name" placeholder="Customer Name" value="{{ customer.name or '' }}" required class="p-2 border rounded">
+            <input name="short_name" placeholder="Short Name" value="{{ customer.short_name or '' }}" class="p-2 border rounded">
+
+            <select name="product_type" id="product-type" class="p-2 border rounded" required>
+                <option value="">Product Type</option>
+                {% for pt in PRODUCT_TYPES %}
+                    <option value="{{ pt }}" {% if customer and customer.product_type == pt %}selected{% endif %}>{{ pt }}</option>
+                {% endfor %}
+            </select>
+
+            <div id="other-description-container" class="col-span-1 {% if not customer or customer.product_type != 'سایر' %}hidden{% endif %}">
+                <input name="other_product_description" placeholder="Specify 'Other' Product Type" value="{{ customer.other_product_description or '' }}" class="p-2 border rounded w-full">
+            </div>
+            
+            <input name="product_description" placeholder="Product Description" value="{{ customer.product_description or '' }}" class="p-2 border rounded">
+            <input name="website_url" placeholder="Website URL" value="{{ customer.website_url or '' }}" class="p-2 border rounded">
+
+            <select name="registration_status" class="p-2 border rounded" required>
+                {% for s in REGISTRATION_STATUSES %}
+                    <option value="{{ s }}" {% if customer and customer.registration_status == s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+
+            <input name="portal_username" placeholder="Tracking Portal Username" value="{{ customer.portal_username or '' }}" class="p-2 border rounded">
+            <input name="portal_password" placeholder="Tracking Portal Password" value="{{ customer.portal_password or '' }}" class="p-2 border rounded">
+
+            <input name="last_action_description" placeholder="Last Action Notes" value="{{ customer.last_action_description or '' }}" class="p-2 border rounded">
+            <input name="inquiry_portal" placeholder="Inquiry Portal URL" value="{{ customer.inquiry_portal or '' }}" class="p-2 border rounded">
+
+            <input name="address1" placeholder="Address 1" value="{{ customer.address1 or '' }}" class="p-2 border rounded">
+            <input name="address2" placeholder="Address 2" value="{{ customer.address2 or '' }}" class="p-2 border rounded">
+        </div>
+
+        <hr class="my-6">
+
+        <h3 class="text-xl font-bold text-gray-800 mb-4">👥 Organizational Units</h3>
+        <div id="units-container" class="space-y-4">
+            {% if customer %}
+                {% for unit in customer.units %}
+                <div class="unit-block p-4 border rounded bg-gray-50" data-index="{{ loop.index0 }}">
+                    <input type="hidden" name="unit_id_{{ loop.index0 }}" value="{{ unit.id }}">
+                    <label>Unit:</label>
+                    <input type="text" name="unit_number_{{ loop.index0 }}" value="{{ unit.unit_number or '' }}" required class="p-2 border rounded w-full">
+                    <label>Manager:</label>
+                    <input type="text" name="manager_{{ loop.index0 }}" value="{{ unit.manager or '' }}" class="p-2 border rounded w-full">
+                    <label>Boss:</label>
+                    <input type="text" name="boss_{{ loop.index0 }}" value="{{ unit.boss or '' }}" class="p-2 border rounded w-full">
+                    <label>Supervisor:</label>
+                    <input type="text" name="supervisor_{{ loop.index0 }}" value="{{ unit.supervisor or '' }}" class="p-2 border rounded w-full">
+                    <label>Experts:</label>
+                    <div class="experts-list space-y-2 mt-2">
+                        {% for expert in unit.experts or [] %} {# Added or [] here #}
+                        <input type="text" name="expert_{{ loop.parent.index0 }}_{{ loop.index0 }}" value="{{ expert.name or '' }}" class="p-2 border rounded w-full">
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="mt-2 bg-blue-500 text-white px-3 py-1 rounded" onclick="addExpert(this)">➕ Add Expert</button>
+                    <button type="button" class="mt-2 bg-red-500 text-white px-3 py-1 rounded" onclick="removeUnit(this)">➖ Remove Unit</button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <div class="mt-4">
+            <button type="button" class="bg-green-600 text-white px-4 py-2 rounded" onclick="addUnit()">➕ Add New Unit</button>
+        </div>
+
+        <div class="mt-6 flex justify-end space-x-2">
+            <a href="/customers" class="bg-gray-300 text-gray-700 px-4 py-2 rounded">Cancel</a>
+            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded">💾 Save Changes</button>
+        </div>
+    </form>
+</div>
+
+<script>
+let unitCounter = {{ customer.units|length if customer else 0 }};
+
+function addUnit() {
+    const container = document.getElementById("units-container");
+    const index = unitCounter++;
+
+    const div = document.createElement("div");
+    div.className = "unit-block p-4 border rounded bg-gray-50 mt-4";
+    div.dataset.index = index;
+    // Note: We add a hidden input 'unit_id' with value 'new' to identify it on the backend.
+    div.innerHTML = `
+        <input type="hidden" name="unit_id_${index}" value="new">
+        <label>Unit:</label>
+        <input type="text" name="unit_number_${index}" class="p-2 border rounded w-full" required placeholder="Unit Number or Name">
+        <label>Manager:</label>
+        <input type="text" name="manager_${index}" class="p-2 border rounded w-full">
+        <label>Boss:</label>
+        <input type="text" name="boss_${index}" class="p-2 border rounded w-full">
+        <label>Supervisor:</label>
+        <input type="text" name="supervisor_${index}" class="p-2 border rounded w-full">
+        <label>Experts:</label>
+        <div class="experts-list space-y-2 mt-2"></div>
+        <button type="button" class="mt-2 bg-blue-500 text-white px-3 py-1 rounded" onclick="addExpert(this)">➕ Add Expert</button>
+        <button type="button" class="mt-2 bg-red-500 text-white px-3 py-1 rounded" onclick="removeUnit(this)">➖ Remove Unit</button>
+    `;
+    container.appendChild(div);
+}
+
+function removeUnit(btn) {
+    btn.closest(".unit-block").remove();
+}
+
+function addExpert(btn) {
+    const unitDiv = btn.closest(".unit-block");
+    const index = unitDiv.dataset.index;
+    const expertContainer = unitDiv.querySelector(".experts-list");
+    const expertCount = expertContainer.querySelectorAll("input").length;
+    
+    const input = document.createElement("input");
+    input.type = "text";
+    input.name = `expert_${index}_${expertCount}`;
+    input.className = "p-2 border rounded w-full mt-2";
+    input.placeholder = "Expert Name";
+    expertContainer.appendChild(input);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const typeSelect = document.getElementById("product-type");
+    const otherContainer = document.getElementById("other-description-container");
+
+    const toggleOtherVisibility = () => {
+        if (typeSelect.value === "سایر") {
+            otherContainer.classList.remove("hidden");
+        } else {
+            otherContainer.classList.add("hidden");
+            otherContainer.querySelector("input").value = "";
+        }
+    };
+
+    typeSelect.addEventListener("change", toggleOtherVisibility);
+    // Run on page load as well
+    toggleOtherVisibility();
+});
+</script>
+{% endblock %}

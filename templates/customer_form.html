@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block content %}
+<form method="post" action="{{ form_action }}" class="bg-white p-6 rounded-lg shadow-lg max-w-4xl mx-auto">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">✏️ ویرایش مشتری: {{ customer.name }}</h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <input name="name" placeholder="نام مشتری" value="{{ customer.name or '' }}" class="p-2 border rounded" required>
+        <input name="short_name" placeholder="مخفف نام" value="{{ customer.short_name or '' }}" class="p-2 border rounded">
+        
+        <select name="product_type" id="product-type" class="p-2 border rounded" required>
+            <option value="">نوع محصول تولیدی</option>
+            {% for option in PRODUCT_TYPES %}
+            <option value="{{ option }}" {% if customer.product_type == option %}selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+        </select>
+
+        <input name="product_description" placeholder="توضیحات محصول" value="{{ customer.product_description or '' }}" class="p-2 border rounded">
+
+        <input name="website_url" placeholder="لینک آدرس سایت" value="{{ customer.website_url or '' }}" class="p-2 border rounded">
+
+        <select name="registration_status" class="p-2 border rounded" required>
+            {% for s in REGISTRATION_STATUSES %}
+            <option value="{{ s }}" {% if customer.registration_status == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+        </select>
+
+        <input name="portal_username" placeholder="یوزر سامانه پیگیری" value="{{ customer.portal_username or '' }}" class="p-2 border rounded">
+        <input name="portal_password" placeholder="پسورد سامانه پیگیری" value="{{ customer.portal_password or '' }}" class="p-2 border rounded">
+
+        <input name="last_action_description" placeholder="توضیحات آخرین اقدام" value="{{ customer.last_action_description or '' }}" class="p-2 border rounded">
+        <input name="inquiry_portal" placeholder="پرتال استعلام" value="{{ customer.inquiry_portal or '' }}" class="p-2 border rounded">
+
+        <input name="address1" placeholder="آدرس 1" value="{{ customer.address1 or '' }}" class="p-2 border rounded">
+        <input name="address2" placeholder="آدرس 2" value="{{ customer.address2 or '' }}" class="p-2 border rounded">
+    </div>
+
+    <div id="other-description-container" class="mt-4 {% if customer.product_type != 'سایر' %}hidden{% endif %}">
+        <label class="block text-sm text-gray-700 mb-1">شرح (در صورت انتخاب "سایر")</label>
+        <input name="other_product_description" value="{{ customer.other_product_description or '' }}" class="p-2 border rounded w-full">
+    </div>
+
+    <h3 class="text-xl font-bold mt-6 mb-2">واحدها</h3>
+    <div id="units-container">
+        {% for unit in customer.units %}
+        <div class="unit border rounded p-4 mt-4 bg-gray-50">
+            <input name="unit_number[]" placeholder="شماره واحد" class="p-2 border rounded w-full my-1" value="{{ unit.unit_number }}">
+            <input name="boss_name[]" placeholder="نام رئیس" class="p-2 border rounded w-full my-1" value="{{ unit.boss_name }}">
+            <input name="admin_name[]" placeholder="نام ادمین" class="p-2 border rounded w-full my-1" value="{{ unit.admin_name }}">
+            <input name="watcher_name[]" placeholder="نام ناظر" class="p-2 border rounded w-full my-1" value="{{ unit.watcher_name }}">
+            <label>کارگران (با کاما جدا کنید):</label>
+            <input name="worker_names[]" placeholder="مثال: علی،رضا،مریم" class="p-2 border rounded w-full my-1" 
+                   value="{{ unit.workers | map(attribute='name') | join(',') }}">
+            <button type="button" onclick="this.parentElement.remove()" class="text-red-600 mt-2">❌ حذف واحد</button>
+        </div>
+        {% endfor %}
+    </div>
+
+    <button type="button" onclick="addUnit()" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded mt-4">➕ افزودن واحد</button>
+
+    <div class="mt-8 flex justify-between">
+        <a href="/customers" class="text-gray-600 bg-gray-200 px-4 py-2 rounded">انصراف</a>
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded">ثبت</button>
+    </div>
+</form>
+
+<form method="post" action="/customer/{{ customer.id }}/delete" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید این مشتری را حذف کنید؟');" class="mt-6 max-w-4xl mx-auto">
+    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded w-full">
+        حذف مشتری ❌
+    </button>
+</form>
+
+<template id="unit-template">
+    <div class="unit border rounded p-4 mt-4 bg-gray-50">
+        <input name="unit_number[]" placeholder="شماره واحد" class="p-2 border rounded w-full my-1">
+        <input name="boss_name[]" placeholder="نام رئیس" class="p-2 border rounded w-full my-1">
+        <input name="admin_name[]" placeholder="نام ادمین" class="p-2 border rounded w-full my-1">
+        <input name="watcher_name[]" placeholder="نام ناظر" class="p-2 border rounded w-full my-1">
+        <label>کارگران (با کاما جدا کنید):</label>
+        <input name="worker_names[]" placeholder="مثال: علی،رضا،مریم" class="p-2 border rounded w-full my-1">
+        <button type="button" onclick="this.parentElement.remove()" class="text-red-600 mt-2">❌ حذف واحد</button>
+    </div>
+</template>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const typeSelect = document.getElementById('product-type');
+    const otherContainer = document.getElementById('other-description-container');
+    const toggleOther = () => {
+        if (typeSelect.value === 'سایر') {
+            otherContainer.classList.remove('hidden');
+        } else {
+            otherContainer.classList.add('hidden');
+        }
+    };
+    typeSelect.addEventListener('change', toggleOther);
+    toggleOther();
+});
+
+function addUnit() {
+    const container = document.getElementById("units-container");
+    const template = document.getElementById("unit-template").content.cloneNode(true);
+    container.appendChild(template);
+}
+</script>
+{% endblock %}

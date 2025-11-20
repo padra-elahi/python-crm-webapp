@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <title>TaskFlow - مدیریت وظایف و پروژه ها</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; }
+        .select2-container .select2-selection--single { height: 42px !important; padding: .5rem .75rem; border-radius: .375rem; border: 1px solid #d1d5db; }
+        .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 24px !important; }
+        .select2-container--default .select2-selection--single .select2-selection__arrow { height: 40px !important; }
+        
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <nav class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-8">
+                    <a href="/dashboard" class="text-2xl font-bold text-blue-600">🚀 TaskFlow</a>
+                    <div class="flex items-baseline space-x-4 space-x-reverse">
+                         <a href="/dashboard" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">داشبورد وظایف</a>
+                         <a href="/projects" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">پروژه ها</a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    {% if user %}
+                    <div class="relative mr-4">
+                        <a href="/dashboard#notifications" class="text-gray-500 hover:text-gray-800">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                        </a>
+                        {% if notifications and notifications|length > 0 %}
+                        <span class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">{{ notifications|length }}</span>
+                        {% endif %}
+                    </div>
+                    <span class="text-gray-700 ml-4">خوش آمدید, <strong class="font-medium">{{ user.username }}</strong></span>
+                    <a href="/profile" class="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors ml-4">پروفایل</a>
+                    <a href="/logout" class="text-sm font-medium text-red-600 hover:text-red-800 transition-colors">خروج</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {% block content %}{% endblock %}
+    </main>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+</body>
+</html>

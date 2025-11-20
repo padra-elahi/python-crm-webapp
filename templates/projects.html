@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold text-gray-800">لیست پروژه ها</h1>
+    <a href="/project/new" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition">
+        ایجاد پروژه جدید +
+    </a>
+</div>
+
+<form method="get" action="/projects" class="bg-white p-4 rounded-lg shadow-md mb-6 flex items-center gap-4">
+    <span class="font-bold">فیلتر:</span>
+    <select name="status_filter" class="p-2 border rounded-md bg-white" onchange="this.form.submit()">
+        <option value="">همه وضعیت ها</option>
+        {% for status in PROJECT_STATUSES %}
+        <option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status }}</option>
+        {% endfor %}
+    </select>
+    <select name="customer_filter" id="project-selector-create" class="p-2 border rounded-md bg-white" onchange="this.form.submit()">
+        <option value="">مشتری</option>
+        {% for p in customers %}
+        <option value="{{ p.name }}">{{ p.id }} - {{ p.name | truncate(50) }}</option>
+        {% endfor %}
+    </select>
+    <input type="text" name="search_filter" placeholder="شماره داخلی یا شرح پروژه" value="{{ filters.search or '' }}" class="p-2 border rounded-md">
+    <input type="text" name="expert_filter" placeholder="کارشناس" value="{{ filters.expert or '' }}" class="p-2 border rounded-md">
+    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md">جستجو</button>
+    <a href="/projects" class="text-sm text-gray-600 hover:underline">حذف فیلترها</a>
+</form>
+
+<div class="bg-white shadow-md rounded-lg overflow-hidden">
+    <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">شماره داخلی</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">مشتری</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">شرح پروژه</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">وضعیت</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">تاریخ تحویل</th>
+                <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+            {% for project in projects %}
+            <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ project.internal_number }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ project.customer }}</td>
+                <td class="px-6 py-4 text-sm text-gray-700 max-w-sm truncate">{{ project.description }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-3 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800">{{ project.status }}</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ project.delivery_date.strftime('%Y-%m-%d') if project.delivery_date else 'N/A' }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
+                    <a href="/project/{{ project.id }}" class="text-blue-600 hover:text-blue-900">جزئیات و ویرایش</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center py-10 text-gray-500">هیچ پروژه ای یافت نشد.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    $('#project-selector-create').select2();
+});
+</script>
+{% endblock %}

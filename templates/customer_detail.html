@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-5xl mx-auto bg-white p-6 rounded-lg shadow-md">
+  <div class="flex justify-between items-center border-b pb-4 mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">🧾 مشتری: {{ customer.name }}</h2>
+    <a href="/customer/{{customer.id}}/edit" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded">✏️ ویرایش</a>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
+    <p><strong>مخفف:</strong> {{ customer.short_name }}</p>
+    <p><strong>نوع محصول:</strong> {{ customer.product_type }}</p>
+    {% if customer.product_type == 'سایر' %}
+      <p><strong>شرح نوع:</strong> {{ customer.other_product_description }}</p>
+    {% endif %}
+    <p><strong>توضیحات:</strong> {{ customer.product_description }}</p>
+    <p><strong>لینک سایت:</strong> 
+      {% if customer.website_url %}<a href="{{ customer.website_url }}" class="text-blue-600 hover:underline" target="_blank">{{ customer.website_url }}</a>{% else %}-{% endif %}
+    </p>
+    <p><strong>وضعیت:</strong> {{ customer.registration_status }}</p>
+    <p><strong>یوزر پیگیری:</strong> {{ customer.portal_username }}</p>
+    <p><strong>پسورد پیگیری:</strong> {{ customer.portal_password }}</p>
+    <p><strong>آخرین اقدام:</strong> {{ customer.last_action_description }}</p>
+    <p><strong>پرتال استعلام:</strong> {{ customer.inquiry_portal }}</p>
+    <p><strong>آدرس ۱:</strong> {{ customer.address1 }}</p>
+    <p><strong>آدرس ۲:</strong> {{ customer.address2 }}</p>
+  </div>
+  <h3 class="text-xl font-bold mt-6 mb-2">واحدهای سازمانی</h3>
+  {% for unit in customer.units %}
+    <div class="border p-4 rounded my-2 bg-gray-50">
+      <p><strong>شماره واحد:</strong> {{ unit.unit_number }}</p>
+      <p><strong>رئیس:</strong> {{ unit.boss_name }}</p>
+      <p><strong>ادمین:</strong> {{ unit.admin_name }}</p>
+      <p><strong>ناظر:</strong> {{ unit.watcher_name }}</p>
+      <p><strong>کارگران:</strong>
+        {% for worker in unit.workers %}
+          <span class="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded mr-1">{{ worker.name }}</span>
+        {% endfor %}
+      </p>
+    </div>
+  {% endfor %}
+
+
+</div>
+{% endblock %}

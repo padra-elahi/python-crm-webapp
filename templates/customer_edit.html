@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">✏️ ویرایش مشتری</h2>
+
+    <form method="POST" action="/customer/{{ customer.id }}">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input name="name" placeholder="نام مشتری" value="{{ customer.name or '' }}" required class="p-2 border rounded">
+            <input name="short_name" placeholder="مخفف نام" value="{{ customer.short_name or '' }}" class="p-2 border rounded">
+
+            <select name="product_type" id="product-type" class="p-2 border rounded" required>
+                <option value="">نوع محصول</option>
+                {% for pt in PRODUCT_TYPES %}
+                    <option value="{{ pt }}" {% if customer.product_type == pt %}selected{% endif %}>{{ pt }}</option>
+                {% endfor %}
+            </select>
+
+            <input name="product_description" placeholder="توضیحات محصول" value="{{ customer.product_description or '' }}" class="p-2 border rounded">
+            <input name="website_link" placeholder="لینک سایت" value="{{ customer.website_link or '' }}" class="p-2 border rounded">
+
+            <select name="registration_status" class="p-2 border rounded" required>
+                {% for s in REGISTRATION_STATUSES %}
+                    <option value="{{ s }}" {% if customer.registration_status == s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+
+            <input name="portal_username" placeholder="یوزر پیگیری" value="{{ customer.portal_username or '' }}" class="p-2 border rounded">
+            <input name="portal_password" placeholder="پسورد پیگیری" value="{{ customer.portal_password or '' }}" class="p-2 border rounded">
+
+            <input name="latest_notes" placeholder="آخرین اقدام" value="{{ customer.latest_notes or '' }}" class="p-2 border rounded">
+            <input name="portal_url" placeholder="پرتال" value="{{ customer.portal_url or '' }}" class="p-2 border rounded">
+
+            <input name="address1" placeholder="آدرس ۱" value="{{ customer.address1 or '' }}" class="p-2 border rounded">
+            <input name="address2" placeholder="آدرس ۲" value="{{ customer.address2 or '' }}" class="p-2 border rounded">
+        </div>
+
+        <div id="other-description-container" class="mt-4 {% if customer.product_type != 'سایر' %}hidden{% endif %}">
+            <label class="block text-sm text-gray-700 mb-1">شرح نوع محصول (در صورت انتخاب "سایر")</label>
+            <input name="product_type_description" value="{{ customer.product_type_description or '' }}" class="p-2 border rounded w-full">
+        </div>
+
+        <hr class="my-6">
+
+        <h3 class="text-xl font-bold text-gray-800 mb-4">👥 ساختار سازمانی</h3>
+        <div id="units-container" class="space-y-4">
+            {% for unit in customer.units %}
+            <div class="unit-block p-4 border rounded bg-gray-50" data-index="{{ loop.index0 }}">
+                <input type="hidden" name="unit_id_{{ loop.index0 }}" value="{{ unit.id }}">
+
+                <label>واحد:</label>
+                <input type="text" name="unit_number_{{ loop.index0 }}" value="{{ unit.unit_number }}" required class="p-2 border rounded w-full">
+
+                <label>مدیر:</label>
+                <input type="text" name="manager_{{ loop.index0 }}" value="{{ unit.manager or '' }}" class="p-2 border rounded w-full">
+
+                <label>رئیس:</label>
+                <input type="text" name="boss_{{ loop.index0 }}" value="{{ unit.boss or '' }}" class="p-2 border rounded w-full">
+
+                <label>سرپرست:</label>
+                <input type="text" name="supervisor_{{ loop.index0 }}" value="{{ unit.supervisor or '' }}" class="p-2 border rounded w-full">
+
+                <label>کارشناسان بازرگانی:</label>
+                <div class="experts-list space-y-2 mt-2">
+                    {% for expert in unit.experts %}
+                    <input type="text" name="expert_{{ loop.parent.index0 }}_{{ loop.index0 }}" value="{{ expert.name }}" class="p-2 border rounded w-full">
+                    {% endfor %}
+                </div>
+                <button type="button" class="mt-2 bg-blue-500 text-white px-3 py-1 rounded" onclick="addExpert(this)">➕ افزودن کارشناس</button>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="mt-4">
+            <button type="button" class="bg-green-600 text-white px-4 py-2 rounded" onclick="addUnit()">➕ افزودن واحد جدید</button>
+        </div>
+
+        <div class="mt-6 flex justify-end space-x-2">
+            <a href="/customers" class="bg-gray-300 text-gray-700 px-4 py-2 rounded">انصراف</a>
+            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded">💾 ذخیره</button>
+        </div>
+    </form>
+</div>
+
+<script>
+let unitCounter = {{ customer.units|length }};
+
+function addUnit() {
+    const container = document.getElementById("units-container");
+    const index = unitCounter++;
+
+    const div = document.createElement("div");
+    div.className = "unit-block p-4 border rounded bg-gray-50 mt-4";
+    div.dataset.index = index;
+    div.innerHTML = `
+        <label>واحد:</label>
+        <input type="text" name="unit_number_${index}" class="p-2 border rounded w-full" required>
+
+        <label>مدیر:</label>
+        <input type="text" name="manager_${index}" class="p-2 border rounded w-full">
+
+        <label>رئیس:</label>
+        <input type="text" name="boss_${index}" class="p-2 border rounded w-full">
+
+        <label>سرپرست:</label>
+        <input type="text" name="supervisor_${index}" class="p-2 border rounded w-full">
+
+        <label>کارشناسان بازرگانی:</label>
+        <div class="experts-list space-y-2 mt-2"></div>
+        <button type="button" class="mt-2 bg-blue-500 text-white px-3 py-1 rounded" onclick="addExpert(this)">➕ افزودن کارشناس</button>
+    `;
+    container.appendChild(div);
+}
+
+function addExpert(btn) {
+    const unitDiv = btn.closest(".unit-block");
+    const index = unitDiv.dataset.index;
+    const expertContainer = unitDiv.querySelector(".experts-list");
+
+    const expertCount = expertContainer.querySelectorAll("input").length;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.name = `expert_${index}_${expertCount}`;
+    input.className = "p-2 border rounded w-full";
+    expertContainer.appendChild(input);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const typeSelect = document.getElementById("product-type");
+    const otherContainer = document.getElementById("other-description-container");
+
+    typeSelect.addEventListener("change", () => {
+        if (typeSelect.value === "سایر") {
+            otherContainer.classList.remove("hidden");
+        } else {
+            otherContainer.classList.add("hidden");
+            otherContainer.querySelector("input").value = "";
+        }
+    });
+});
+</script>
+{% endblock %}
